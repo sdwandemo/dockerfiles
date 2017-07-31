@@ -18,6 +18,7 @@ RUN pacman --noconfirm -Syy --needed \
     samba \
     dmidecode \
     net-tools \
+    inotify-tools \
     vim && \
     gem install --no-user-install clamp nokogiri bytes_converter ruby-ip
 
@@ -27,7 +28,7 @@ RUN runuser -l dev -c 'yaourt --noconfirm -Syyu --aur teleport'
 COPY overlay /
 
 RUN systemctl enable libvirtd.service && \
-    systemctl enable sshd.service && \
+    systemctl disable sshd.service && \
     systemctl enable domrun.service && \
     systemctl enable teleport.service && \
     rm -rf /usr/lib/tmpfiles.d/ceph.conf && \

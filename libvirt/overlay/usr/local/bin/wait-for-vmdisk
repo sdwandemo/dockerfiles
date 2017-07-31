@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+file=$1
+while [[ ! -f "${file}_" ]]
+do
+  inotifywait -qqt 2 -e create "$(dirname $file)"
+done
