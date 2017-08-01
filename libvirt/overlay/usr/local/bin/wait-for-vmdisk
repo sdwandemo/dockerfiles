@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 file=$1
-while [[ ! -f "${file}_" ]]
+while [[ ! -f "_${file}_" ]]
 do
   inotifywait -qqt 2 "$(dirname $file)"
 done
