@@ -4,7 +4,7 @@ After=libvirtd.service
 Requires=libvirtd.service
 
 [Service]
-type=simple
+Type=simple
 EnvironmentFile=-/etc/default/domrun
 EnvironmentFile=-/etc/default/domrun.d/*
 ExecStartPre=/usr/local/bin/wait-for-vmdisk $VM_DISK
