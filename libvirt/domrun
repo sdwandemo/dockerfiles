@@ -110,6 +110,7 @@ module Domrun
       Pathname.new(domxml).write(@doc.to_xml)
       `systemctl disable console-getty.service`
       `systemctl mask console-getty.service`
+      `systemctl mask systemd-udevd.service`
       exec '/lib/systemd/systemd --system'
     end
 
