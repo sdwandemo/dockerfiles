@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
 file=$1
-while [[ ! -f "_${file}_" ]]
+fname=$(basename $file)
+dname=$(dirname $file)
+
+while [[ ! -f "${dname}/${fname}" ]]
 do
-  inotifywait -qqt 2 "$(dirname $file)"
+  logger -t wait-for-vmdisk -s "Waiting for ${fname} to become available..."
+  inotifywait -qqt 2 "${dname}"
 done

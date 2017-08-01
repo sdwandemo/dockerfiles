@@ -38,4 +38,6 @@ ADD https://raw.githubusercontent.com/sdwandemo/topology2/master/resources/xvnc.
 
 RUN usermod -a -G wireshark dev && \
     systemctl enable teleport.service && \
+    systemctl disable sshd.service && \
+    systemctl mask getty.service && \
     systemctl enable xvnc.service
