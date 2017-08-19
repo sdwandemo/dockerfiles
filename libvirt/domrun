@@ -72,6 +72,7 @@ module Domrun
       "brctl addif #{bname} $1",
       "#{log} added $1 to #{bname}" ,
       "[[ ! $(brctl show #{bname} | grep #{if_name}) ]] && brctl addif #{bname} #{if_name}",
+      "brctl addif #{bname} #{if_name}",
       "#{log} added #{if_name} to #{bname}",
       "ip link set dev #{bname} up",
       "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n") + "\n"
