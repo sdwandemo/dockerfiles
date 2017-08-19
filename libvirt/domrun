@@ -70,9 +70,9 @@ module Domrun
       "[[ ! $(brctl show | grep #{bname}) ]] && brctl addbr #{bname}",
       "#{log} created bridge #{bname}" ,
       "brctl addif #{bname} $1",
-      "#{log} added $1 to bridge" ,
-      "[[ ! $(brctl show | grep #{if_name}) ]] && brctl addif #{bname} #{if_name}",
-      "#{log} added #{if_name} to bridge",
+      "#{log} added $1 to #{bname}" ,
+      "[[ ! $(brctl show #{bname} | grep #{if_name}) ]] && brctl addif #{bname} #{if_name}",
+      "#{log} added #{if_name} to #{bname}",
       "ip link set dev #{bname} up",
       "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n") + "\n"
   end
