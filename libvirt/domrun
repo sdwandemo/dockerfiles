@@ -8,7 +8,7 @@ module Domrun
     @doc = Nokogiri::XML(open(template))
     @doc.at_css('name').content = name
     @doc.at_css('title').content = title
-    attach_networks
+    nics ? attach_x_networks : attach_specific_networks
     @doc.at_css('disk').at_css('source')['file'] = copy(disk)
     %w(memory currentMemory).each { |c| @doc.at_css(c).content = mem}
     @doc.at_css('vcpu').content = cpus
@@ -24,7 +24,60 @@ module Domrun
     qcow2_disk.to_s
   end
 
-  def attach_networks
+  def attach_x_networks
+    master = @doc.at_css('interface').dup
+    @doc.at_css('interface').remove
+
+    raise ArgumentError, 'Only 2 container networks allowed in this config!' unless container_networks.keys.size == 2
+
+    mngmnt_net = container_networks[container_networks.keys.first]
+    bridge_net = container_networks[container_networks.keys.last]
+
+    nics.times do |i|
+      netname = (i == 0 ? mngmnt_net : bridge_net)
+
+      cp = master.dup
+      nic_name = 'vn4' + netname.values.first
+      script_path = '/usr/local/bin/qemu-ifup-' + nic_name
+      cp.at_css('target')['dev'] = nic_name
+      cp.at_css('script')['path'] = script_path
+      Pathname.new(script_path).write(script_x(netname))
+      FileUtils.chmod(0755, script_path)
+      @doc.at_css('devices').add_child(cp)
+    end
+  end
+
+  def script_x(n)
+    if_name = n.values.first
+    ip_addr = n.keys.first
+    bname = "switch"
+    log = "logger -t qemu-ifup #{bname}"
+    ipam = ["ip a del #{ip_addr} dev #{if_name}",
+            "#{log} ip a del #{ip_addr} dev #{if_name}"]
+
+    if @firstnet == n
+      ipam << "ip a add #{ip_addr} dev #{bname}"
+      ipam << "#{log} ip a add #{ip_addr} dev #{bname}"
+      ipam << "ip r add default via #{@default_route} dev #{bname}"
+      ipam << "#{log} ip r add default via #{ip_addr.split('/').first} dev #{bname}"
+      bname = 'management'
+    end
+
+    (['#!/bin/bash',
+      "ip link set $1 up",
+      "#{log} ip link set $1 up",
+      "sleep 3",
+      "[[ ! $(brctl show | grep #{bname}) ]] && brctl addbr #{bname}",
+      "#{log} created bridge #{bname}" ,
+      "brctl addif #{bname} $1",
+      "#{log} added $1 to bridge" ,
+      "[[ ! $(brctl show | grep #{if_name}) ]] && brctl addif #{bname} #{if_name}",
+      "#{log} added #{if_name} to bridge",
+      "ip link set dev #{bname} up",
+      "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n") + "\n"
+  end
+
+  def attach_specific_networks
     master = @doc.at_css('interface').dup
     @doc.at_css('interface').remove
 
@@ -71,7 +124,7 @@ module Domrun
      "brctl addif #{bname} #{if_name}",
      "#{log} added #{if_name} to bridge",
      "ip link set dev #{bname} up",
-     "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n")
+     "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n") + "\n"
   end
 
   def container_networks
@@ -97,6 +150,7 @@ module Domrun
     option ['-m', '--mem'], 'MEM', 'amount of memory, ie 4gb 0.5gb 1024mb', environment_variable: 'VM_MEM', required: true
     option ['-c', '--cpus'], 'CPUS', 'amount of cpus', environment_variable: 'VM_CPUS', required: true
     option '--net', 'NETWORKS', 'Sequence of IP2NIC mappings', environment_variable: 'VM_NET', attribute_name: 'networks', required: true
+    option '--nics', 'NICS', 'Amount of NICs', environment_variable: 'VM_NICS', attribute_name: 'nics', required: false
     option ['-d', '--disk'], 'DISK', 'filesystem path to qcow2 img', environment_variable: 'VM_DISK', default: '/var/lib/libvirt/images/image.qcow2'
     option ['-s', '--size'], 'DISKSIZE', 'declared disk size for qcow2 img', environment_variable: 'VM_DISK_SIZE', attribute_name: 'disk_size', default: '5G'
     option ['-x', '--xml'], 'DOMXML', 'filesystem path to domain.xml', environment_variable: 'VM_XML', attribute_name: 'domxml',default: '/etc/default/domrun.xml'
@@ -104,7 +158,7 @@ module Domrun
 
     def execute
 
-      @template = 'https://raw.githubusercontent.com/sdwandemo/topology2/master/resources/domain_template.xml' unless @template
+      @template = 'https://raw.githubusercontent.com/sdwandemo/topology/master/resources/domain_template.xml' unless @template
       libvirt_xml
       Pathname.new('/etc/default/domrun').write(_env.join("\n"))
       Pathname.new(domxml).write(@doc.to_xml)
