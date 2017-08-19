@@ -34,7 +34,7 @@ RUN runuser -l dev -c 'yaourt --aur --noconfirm --needed -Syyu && \
                          teleport \
                          iproute2'
 
-ADD https://raw.githubusercontent.com/sdwandemo/topology2/master/resources/xvnc.service /usr/lib/systemd/system/xvnc.service
+ADD https://raw.githubusercontent.com/sdwandemo/topology/master/resources/xvnc.service /usr/lib/systemd/system/xvnc.service
 
 RUN usermod -a -G wireshark dev && \
     systemctl enable teleport.service && \

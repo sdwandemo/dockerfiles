@@ -28,12 +28,12 @@ module Domrun
     master = @doc.at_css('interface').dup
     @doc.at_css('interface').remove
 
-    raise ArgumentError, 'Only 2 container networks allowed in this config!' unless container_networks.keys.size == 2
+    raise ArgumentError, 'Only 2 container networks allowed in this config!' unless container_networks.size == 2
 
-    mngmnt_net = container_networks[container_networks.keys.first]
-    bridge_net = container_networks[container_networks.keys.last]
+    mngmnt_net = @firstnet
+    bridge_net = container_networks.find{ |n| n != @firstnet }
 
-    nics.times do |i|
+    nics.to_i.times do |i|
       netname = (i == 0 ? mngmnt_net : bridge_net)
 
       cp = master.dup
