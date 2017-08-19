@@ -37,7 +37,7 @@ module Domrun
       netname = (i == 0 ? mngmnt_net : bridge_net)
 
       cp = master.dup
-      nic_name = 'vn4' + netname.values.first
+      nic_name = "vn4n#{i}" + netname.values.first
       script_path = '/usr/local/bin/qemu-ifup-' + nic_name
       cp.at_css('target')['dev'] = nic_name
       cp.at_css('script')['path'] = script_path
@@ -50,17 +50,17 @@ module Domrun
   def script_x(n)
     if_name = n.values.first
     ip_addr = n.keys.first
-    bname = "switch"
+    bname = "switch" unless n == @firstnet
     log = "logger -t qemu-ifup #{bname}"
     ipam = ["ip a del #{ip_addr} dev #{if_name}",
             "#{log} ip a del #{ip_addr} dev #{if_name}"]
 
-    if @firstnet == n
+    if n == @firstnet
+      bname = 'management'
       ipam << "ip a add #{ip_addr} dev #{bname}"
       ipam << "#{log} ip a add #{ip_addr} dev #{bname}"
       ipam << "ip r add default via #{@default_route} dev #{bname}"
       ipam << "#{log} ip r add default via #{ip_addr.split('/').first} dev #{bname}"
-      bname = 'management'
     end
 
     (['#!/bin/bash',
