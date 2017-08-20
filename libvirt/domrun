@@ -63,6 +63,7 @@ module Domrun
       ipam << "# Management network detected!"
       ipam << "# ----------"
       ipam << "ip a add #{ip_addr} dev #{bname} && #{log} ip a add #{ip_addr} dev #{bname}"
+      ipam << "ip r del default"
       ipam << "ip r add default via #{default_route} dev #{bname} && #{log} ip r add default via #{default_route} dev #{bname}"
       ipam << "# ----------"
     end
@@ -73,7 +74,7 @@ module Domrun
       "[[ ! $(brctl show | grep -si #{bname}) ]] && (brctl addbr #{bname} && #{log} created bridge #{bname}) ",
       "brctl addif #{bname} $1 && #{log} added $1 to #{bname}",
       "[[ ! $(brctl show #{bname} | grep -si #{if_name}) ]] && (brctl addif #{bname} #{if_name} && #{log} added #{if_name} to #{bname})",
-      "ip link set dev #{bname} up"] + ipam).join("\n") + "\n"
+      "ip link set dev #{bname} up"] + ipam).join("\n") + "\nexit 0\n"
   end
 
   def attach_specific_networks
