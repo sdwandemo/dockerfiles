@@ -54,30 +54,26 @@ module Domrun
     bname = (@firstnet == n ? 'management' : 'switch')
     log = "logger -t qemu-ifup #{bname}"
 
-    ipam = ["# IPAM",
-            "ip a del #{ip_addr} dev #{if_name}",
-            "#{log} ip a del #{ip_addr} dev #{if_name}"]
+    ipam = [
+            "# IPAM",
+            "ip a del #{ip_addr} dev #{if_name} && #{log} ip a del #{ip_addr} dev #{if_name}"
+           ]
 
     if @firstnet == n
-      ipam << "ip a add #{ip_addr} dev #{bname}"
-      ipam << "#{log} ip a add #{ip_addr} dev #{bname}"
-      ipam << "ip r add default via #{default_route} dev #{bname}"
-      ipam << "#{log} ip r add default via #{default_route} dev #{bname}"
+      ipam << "# Management network detected!"
+      ipam << "# ----------"
+      ipam << "ip a add #{ip_addr} dev #{bname} && #{log} ip a add #{ip_addr} dev #{bname}"
+      ipam << "ip r add default via #{default_route} dev #{bname} && #{log} ip r add default via #{default_route} dev #{bname}"
+      ipam << "# ----------"
     end
 
     (['#!/bin/bash',
-      "ip link set $1 up",
-      "#{log} ip link set $1 up",
+      "ip link set $1 up && #{log} ip link set $1 up",
       "sleep 3",
-      "[[ ! $(brctl show | grep #{bname}) ]] && brctl addbr #{bname}",
-      "#{log} created bridge #{bname}" ,
-      "brctl addif #{bname} $1",
-      "#{log} added $1 to #{bname}" ,
-      "[[ ! $(brctl show #{bname} | grep #{if_name}) ]] && brctl addif #{bname} #{if_name}",
-      "brctl addif #{bname} #{if_name}",
-      "#{log} added #{if_name} to #{bname}",
-      "ip link set dev #{bname} up",
-      "#{log} $(brctl show #{bname} | awk 'END{print}')"] + ipam).join("\n") + "\n"
+      "[[ ! $(brctl show | grep -si #{bname}) ]] && (brctl addbr #{bname} && #{log} created bridge #{bname}) ",
+      "brctl addif #{bname} $1 && #{log} added $1 to #{bname}",
+      "[[ ! $(brctl show #{bname} | grep -si #{if_name}) ]] && (brctl addif #{bname} #{if_name} && #{log} added #{if_name} to #{bname})",
+      "ip link set dev #{bname} up"] + ipam).join("\n") + "\n"
   end
 
   def attach_specific_networks
