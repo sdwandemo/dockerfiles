@@ -37,7 +37,8 @@ module Domrun
       netname = (i == 0 ? mngmnt_net : bridge_net)
 
       cp = master.dup
-      nic_name = "vn4n#{i}" + netname.values.first
+      nic_name = "vn#{i}"
+      #+ netname.values.first
       script_path = '/usr/local/bin/qemu-ifup-' + nic_name
       cp.at_css('target')['dev'] = nic_name
       cp.at_css('script')['path'] = script_path
