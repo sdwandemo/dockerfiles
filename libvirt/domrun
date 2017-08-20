@@ -50,17 +50,19 @@ module Domrun
   def script_x(n)
     if_name = n.values.first
     ip_addr = n.keys.first
-    bname = "switch" unless n == @firstnet
+    default_route = IP.new(ip_addr).network(1).to_s.split('/').first
+    bname = (@firstnet == n ? 'management' : 'switch')
     log = "logger -t qemu-ifup #{bname}"
-    ipam = ["ip a del #{ip_addr} dev #{if_name}",
+
+    ipam = ["# IPAM",
+            "ip a del #{ip_addr} dev #{if_name}",
             "#{log} ip a del #{ip_addr} dev #{if_name}"]
 
-    if n == @firstnet
-      bname = 'management'
+    if @firstnet == n
       ipam << "ip a add #{ip_addr} dev #{bname}"
       ipam << "#{log} ip a add #{ip_addr} dev #{bname}"
-      ipam << "ip r add default via #{@default_route} dev #{bname}"
-      ipam << "#{log} ip r add default via #{ip_addr.split('/').first} dev #{bname}"
+      ipam << "ip r add default via #{default_route} dev #{bname}"
+      ipam << "#{log} ip r add default via #{default_route} dev #{bname}"
     end
 
     (['#!/bin/bash',
